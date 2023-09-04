@@ -1,0 +1,851 @@
+# 
+# Thank you for downloading pDiscord Premium
+# It's resource of Hyper Series (www.hyperseries.net) (https://discord.gg/vU7fq5XtGN)
+# If you want to make special skripts join Hyper Series discord server https://discord.gg/vU7fq5XtGN
+#
+# If you need any support about pDiscord Premium join Skript Community discord server for help https://discord.gg/D4bqSty
+# Authors: Pocan, Ali Öztürk, StayLing
+#
+# If you need a minecraft hosting server use SAGANETWORK.NET (https://www.saganetwork.net/)
+# It's cheap and high performance 
+#
+
+options:
+	token: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+	
+# Imports
+
+import:
+	java.util.Date		
+	java.text.SimpleDateFormat
+	java.net.URL
+	java.util.Scanner
+	net.dv8tion.jda.api.entities.Member
+
+# Options
+
+options:
+	version: 1.0.6
+
+init:
+	pDiscordPremiumLoadYAML()
+	pDiscordSendStartupMessageToConsole()
+	updateChecker()
+
+# Expressions & Effects & Condications
+
+expression time %string%:
+	return type: object
+	get:
+		set {_date} to new SimpleDateFormat(expression-1)
+		return {_date}.format(new Date())
+		set raw expr-8 to {_i}
+
+effect (create|make) (long|paragraph) modal input with id %-string% (with name|named) %-string% with min[imum] [length] %-integer% and max[imum] [length] %-integer% [with placeholder %-string%] [with value %-string%] with required [state] %boolean% and store (the [modal] input|it) in %-objects%:
+	trigger:
+		set {_i} to new text input with id expr-1 named expr-2
+		set placeholder of {_i} to expr-5 if expr-5 is set
+		set value of {_i} to expr-6 if expr-6 is set
+		set min range of {_i} to expr-3
+		set max range of {_i} to expr-4
+		set required state of {_i} to expr-7
+		set raw expr-8 to {_i}
+
+expression htpp request from %string%:
+	return type: strings
+	get:
+		set {_url} to new URL(expr-1)
+		set {_connect} to {_url}.openConnection()
+		{_connect}.setRequestMethod("GET")
+		{_connect}.setConnectTimeout(5000)
+		{_connect}.setReadTimeout(5000)
+		set {_scanner} to new Scanner({_connect}.getInputStream())
+		{_scanner}.useDelimiter("\A")
+		return {_scanner}.next() if {_scanner}.hasNext() is true, else null
+
+
+define new bot named "pDiscord":
+	token: "{@token}"
+	intents: default intents
+	policy: all
+	auto reconnect: true
+	compression: none
+	on ready:
+		send "&8&l[&a&lINFO&8&l] &b%event-bot% has been loaded." to console
+	on guild ready:
+		send "&8&l[&a&lINFO&8&l] &b%event-bot%&f just loaded &6%event-guild%&f guild!" to console
+		pDiscordPremiumLoadYAML()
+		set {_setupcommandname} to "%getYAMLValue("Setup.Command", "pDiscordPremium-config")%"
+		set {_setupcommanddesc} to "%getYAMLValue("Setup.Command-Description", "pDiscordPremium-config")%"
+		set {_setup} to new slash command named "%{_setupcommandname}%" with description "%{_setupcommanddesc}%"
+		update {_setup} globally in event-bot
+
+# Functions
+
+
+function updateChecker():
+	set {_htpp} to htpp request from "https://api.spigotmc.org/legacy/update.php?resource=92052"
+	if {_htpp} = "{@version}":
+		send "&b&lpDISCORD &8▶ &fThe version you are using is &alatest. &8(&d%{_htpp}%&8)" to console
+	else:
+		send "&b&lpDISCORD &8▶ &fThe version you are using &coutdated! &8(&d{@version}&8) " to console
+		send "&b&lpDISCORD &8▶ &cDownload the new version from &ebit.ly/3pHuhJY" to console
+
+function pDiscordPremiumLoadYAML():
+	load yaml "plugins/pDiscord/data/database.yml" as "pDiscordPremium"
+	load yaml "plugins/pDiscord/config.yml" as "pDiscordPremium-config"
+	load yaml "plugins/pDiscord/language.yml" as "pDiscordPremium-language"
+	#load yaml "plugins/pDiscord/Ticket/config.yml" as "ticket-config"  (Soon?)
+	if yaml "pDiscordPremium-config" is empty:
+		set yaml value "Version" from "pDiscordPremium-config" to "1.0.6"
+
+		#set yaml value "Options.Token" from "pDiscordPremium-config" to ""
+		set yaml value "Options.Guild-ID" from "pDiscordPremium-config" to ""
+		set yaml value "Options.Change-Nickname-After-Linking-Account" from "pDiscordPremium-config" to true
+		set yaml value "Options.Give-Role-After-Linking-Account" from "pDiscordPremium-config" to true
+		set yaml value "Options.Give-Reward-After-Linking-Account" from "pDiscordPremium-config" to true
+
+		set yaml value "Setup.Command" from "pDiscordPremium-config" to "setup"
+		set yaml value "Setup.Command-Description" from "pDiscordPremium-config" to "Setup the app."
+
+		add "" to yaml list "Setup.Admin-ID" from "pDiscordPremium-config"
+	
+		set yaml value "Groups.default" from "pDiscordPremium-config" to "0000000000000000000"
+		add "say {player} linked his/her account with discord." to yaml list "Rewards.Console" from "pDiscordPremium-config"
+		add "say {player} so sweet." to yaml list "Rewards.Console" from "pDiscordPremium-config"
+		save yaml "pDiscordPremium-config"
+
+	if yaml "pDiscordPremium-language" is empty:
+		set yaml value "Language.Setup-Embed-Title" from "pDiscordPremium-language" to "**pDiscord - Account Link**"
+		set yaml value "Language.Setup-Embed-Thumbnail" from "pDiscordPremium-language" to "https://media.discordapp.net/attachments/777210413657227336/1125085483807014984/wolfmc.png?width=558&height=558"
+		set yaml value "Language.Setup-Embed-Footer" from "pDiscordPremium-language" to "pDiscord Premium - All Rights Reserved"
+		add "" to yaml list "Language.Setup-Embed-Description" from "pDiscordPremium-language"
+		add "If you want to pair your Minecraft account with your discord account, you can follow the instructions below." to yaml list "Language.Setup-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.Setup-Embed-Description" from "pDiscordPremium-language"
+		add "1-**Click on the Match Account** button." to yaml list "Language.Setup-Embed-Description" from "pDiscordPremium-language"
+		add "2- Enter your user name in the game in the '**Account name**' section." to yaml list "Language.Setup-Embed-Description" from "pDiscordPremium-language"
+		add "3- '**Verification code:' Type the verification code shared with you in the ** section of the game and click **Send**." to yaml list "Language.Setup-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.Setup-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.Setup-Embed-Description" from "pDiscordPremium-language"
+
+		set yaml value "Language.Already-Matched-Embed-Title" from "pDiscordPremium-language" to "**pDiscord - Account Link**"
+		add "Your discord account already linked with **{account}**" to yaml list "Language.Already-Matched-Embed-Description" from "pDiscordPremium-language"
+
+		set yaml value "Language.Succesfully-Updated-Profile-Embed-Title" from "pDiscordPremium-language" to "**pDiscord - Account Link**"
+		add "You're succesfully updated the **{account}**" to yaml list "Language.Succesfully-Updated-Profile-Embed-Description" from "pDiscordPremium-language"
+
+		set yaml value "Language.Please-Link-Your-Account-Embed-Title" from "pDiscordPremium-language" to "**pDiscord - Account Link**"
+		add "Please link your account to be able to use this function." to yaml list "Language.Please-Link-Your-Account-Embed-Description" from "pDiscordPremium-language"
+
+		set yaml value "Language.Succesfully-Linked-Embed-Title" from "pDiscordPremium-language" to "**pDiscord - Account Link**"
+		add "You have successfully matched your discord account with **{account}**" to yaml list "Language.Succesfully-Linked-Embed-Description" from "pDiscordPremium-language"
+
+		set yaml value "Language.Wrong-Auth-Embed-Title" from "pDiscordPremium-language" to "**pDiscord - Account Link**"
+		add "The linking could not be made. (Incorrect game name or incorrect code)" to yaml list "Language.Wrong-Auth-Embed-Description" from "pDiscordPremium-language"
+
+		set yaml value "Language.Already-Linked-Before-Embed-Title" from "pDiscordPremium-language" to "**pDiscord - Account Link**"
+		add "The account that has this player's name has been mapped by someone else before." to yaml list "Language.Already-Linked-Before-Embed-Description" from "pDiscordPremium-language"
+
+
+		set yaml value "Language.2FA-Enabled-Embed-Title" from "pDiscordPremium-language" to "**pDiscord - 2 Step Verification**"
+		add "Two-step verification has been activated for the player named **{account}**." to yaml list "Language.2FA-Enabled-Embed-Description" from "pDiscordPremium-language"
+		add "Now every time you log in to the server, the bot will ask you for confirmation." to yaml list "Language.2FA-Enabled-Embed-Description" from "pDiscordPremium-language"
+		add "You can make your account more secure by using two-step verification." to yaml list "Language.2FA-Enabled-Embed-Description" from "pDiscordPremium-language"
+		add "Your account is now even more secure through two-step verification." to yaml list "Language.2FA-Enabled-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.2FA-Enabled-Embed-Description" from "pDiscordPremium-language"
+		add "**WARNING** In order to use this system, you must activate the messages from this server." to yaml list "Language.2FA-Enabled-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.2FA-Enabled-Embed-TiDescriptiontle" from "pDiscordPremium-language"
+
+
+		set yaml value "Language.2FA-Disabled-Embed-Title" from "pDiscordPremium-language" to "**pDiscord - 2 Step Verification**"
+		add "Two-step verification has been removed for the player named **{account}**." to yaml list "Language.2FA-Disabled-Embed-Description" from "pDiscordPremium-language"
+		add "The bot will no longer ask you for confirmation every time you log in to the server." to yaml list "Language.2FA-Disabled-Embed-Description" from "pDiscordPremium-language"
+		add "You can make your account more secure by using two-step verification." to yaml list "Language.2FA-Disabled-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.2FA-Disabled-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.2FA-Disabled-Embed-Description" from "pDiscordPremium-language"
+		add "**WARNING** In order to use this system, you must activate the messages from this server." to yaml list "Language.2FA-Disabled-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.2FA-Disabled-Embed-Description" from "pDiscordPremium-language"
+
+		set yaml value "Language.2FA-Succesfully-Game-Title" from "pDiscordPremium-language" to "&a&LVERIFICATION IS SUCCESSFUL"
+		set yaml value "Language.2FA-Succesfully-Game-Subtitle" from "pDiscordPremium-language" to "&eYou can continue your game."
+
+		set yaml value "Language.2FA-Succesfully-Embed-Title" from "pDiscordPremium-language" to "**pDiscord - 2 Step Verification**"
+		add "Two-step verification **{account}** has been approved for the player named." to yaml list "Language.2FA-Succesfully-Embed-Description" from "pDiscordPremium-language"
+
+
+
+		set yaml value "Language.Lock-Account-Enabled-Embed-Title" from "pDiscordPremium-language" to "**pDiscord - Lock Account**"
+		add "**{account}** The server login has been locked for the player named." to yaml list "Language.Lock-Account-Enabled-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.Lock-Account-Enabled-Embed-Description" from "pDiscordPremium-language"
+		add "To log in to the server, you must first unlock the account." to yaml list "Language.Lock-Account-Enabled-Embed-Description" from "pDiscordPremium-language"
+
+		set yaml value "Language.Lock-Account-Disabled-Embed-Title" from "pDiscordPremium-language" to "**pDiscord - Lock Account**"
+		add "The server login lock has been removed for the player named {account}**." to yaml list "Language.Lock-Account-Disabled-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.Lock-Account-Disabled-Embed-Description" from "pDiscordPremium-language"
+		add "You can log in to the server now." to yaml list "Language.Lock-Account-Disabled-Embed-Description" from "pDiscordPremium-language"
+
+
+		set yaml value "Language.2FA-General-Embed-Title" from "pDiscordPremium-language" to "**pDiscord - 2 Step Verification**"
+		set yaml value "Language.2FA-General-Embed-Thumbnail" from "pDiscordPremium-language" to "https://minotar.net/avatar/{player}/45.png"
+		add "The server was logged in with the account **{account}**." to yaml list "Language.2FA-General-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.2FA-General-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.2FA-General-Embed-Description" from "pDiscordPremium-language"
+		add "- The logged-in IP address ▶ {ip}" to yaml list "Language.2FA-General-Embed-Description" from "pDiscordPremium-language"
+		add "- Connection address location ▶ {country}/{region}/{city}" to yaml list "Language.2FA-General-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.2FA-General-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.2FA-General-Embed-Description" from "pDiscordPremium-language"
+		add "**[INFORMATION]** Confirm by pressing the button at the bottom to be able to play on the server." to yaml list "Language.2FA-General-Embed-Description" from "pDiscordPremium-language"
+		add "**[WARNING]** If this login does not belong to you, please change your password." to yaml list "Language.2FA-General-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.2FA-General-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.2FA-General-Embed-Description" from "pDiscordPremium-language"
+		add "" to yaml list "Language.2FA-General-Embed-Description" from "pDiscordPremium-language"
+
+
+		set yaml value "Language.Setup-Embed-Buttons.More-Information-Link" from "pDiscordPremium-language" to "https://hyperseries.net/"
+		set yaml value "Language.Setup-Embed-Buttons.More-Information-Text" from "pDiscordPremium-language" to "🔍   More Information"
+		set yaml value "Language.Setup-Embed-Buttons.Link-Account-Text" from "pDiscordPremium-language" to "✔   Link Account"
+		set yaml value "Language.Setup-Embed-Buttons.Lock-Account-Text" from "pDiscordPremium-language" to "🔒   Lock Account"
+		set yaml value "Language.Setup-Embed-Buttons.Update-Account-Text" from "pDiscordPremium-language" to "🔎   Update Account"
+		set yaml value "Language.Setup-Embed-Buttons.2FA-Text" from "pDiscordPremium-language" to "🔐   2-Step Verification"
+		set yaml value "Language.Setup-Embed-Buttons.2FA-Verify-Text" from "pDiscordPremium-language" to "Click here to verify"
+		set yaml value "Language.Setup-Embed-Buttons.2FA-Succesfully-Text" from "pDiscordPremium-language" to "Verification Successfully"
+
+
+		set yaml value "Language.Modals.Title" from "pDiscordPremium-language" to "Link Account"
+		set yaml value "Language.Modals.Account-Name-Text" from "pDiscordPremium-language" to "Account Name"
+		set yaml value "Language.Modals.Account-Name-Placeholder" from "pDiscordPremium-language" to "Write your in game name"
+
+		set yaml value "Language.Modals.Verification-Code-Text" from "pDiscordPremium-language" to "Verification Code"
+		set yaml value "Language.Modals.Verification-Code-Placeholder" from "pDiscordPremium-language" to "Write the verification code"
+
+		add "&b&lpDISCORD &8▶ &7Activate the &c2 Step Verification &7system to keep your account progress even more secure." to yaml list "Language.Game.Warn-Enable-2FA-Message" from "pDiscordPremium-language"
+		add "&b&lpDISCORD &8▶ &7You can lock your account when you log out to keep your account even more secure." to yaml list "Language.Game.Warn-Enable-Lock-Account-Message" from "pDiscordPremium-language"
+		set yaml value "Language.Game.Kick-Lock-Account-Message" from "pDiscordPremium-language" to "&cYour account is locked."
+		add "&b&lpDISCORD &8▶ &ca code has already been created before." to yaml list "Language.Game.Warn-Already-Code-Created-Before-Message" from "pDiscordPremium-language"
+		add "&b&lpDISCORD &8▶ &cThe code you created is still in use &8 ▶ &b{code}" to yaml list "Language.Game.Warn-Already-Code-Created-Before-Message" from "pDiscordPremium-language"
+		add "&b&lpDISCORD &8▶ &cYou're already linked your account." to yaml list "Language.Game.Error-Already-Linked-Account-Message" from "pDiscordPremium-language"
+		
+		add "&b&lpDISCORD &8▶ &7Successfully created the account link code." to yaml list "Language.Game.Code-Created-Message" from "pDiscordPremium-language"
+		add "&b&lpDISCORD &8▶ &7Code &8▶ &a{code}" to yaml list "Language.Game.Code-Created-Message" from "pDiscordPremium-language"
+
+		set yaml value "Language.Game.2FA-Title" from "pDiscordPremium-language" to "&c&l2FA"
+		set yaml value "Language.Game.2FA-Subtitle" from "pDiscordPremium-language" to "&ePlease do the verification"
+	
+		set yaml value "Language.YAML.Template.Join" from "pDiscordPremium-language" to "{date} - joined the game"
+		set yaml value "Language.YAML.Template.Quit" from "pDiscordPremium-language" to "{date} - quited the game"
+		save yaml "pDiscordPremium-language"
+
+	
+
+		
+function pDiscordSendStartupMessageToConsole():
+	send "" to console 
+	send "&f&l---------------------------------------" to console 
+	send "" to console 
+	send "&b&lpDISCORD Premium &aactived!" to console 
+	send "&dDeveloper &8▶ &cPocan &8(&cpocan.&8)" to console
+	send "&6Support &8▶ &ahttps://discord.gg/D4bqSty" to console
+	send "" to console
+	send "&f&l---------------------------------------" to console 
+	send "" to console
+
+function pDiscordPremiumUnloadYAML():
+	unload yaml "pDiscordPremium"
+	unload yaml "pDiscordPremium-config"
+
+
+function pDiscordPremiumIsAccountExist(account : player) :: boolean:
+	load yaml "plugins/pDiscord/Profil/players/%{_account}%.yml" as "profile-%{_account}%"
+	set {_checker} to yaml value "Link.Status" from "profile-%{_account}%"
+	unload yaml "profile-%{_account}%"
+	if {_checker} = true:
+		return true
+	return false
+
+function pDiscordPremiumIsCodeExist(account : player) :: boolean:
+	set {_checker} to yaml value "Database.%{_account}%.Code" from "pDiscordPremium"
+	if {_checker} is set:
+		return true
+	return false
+
+function pDiscordPremiumGetGeneratedCode(account : player) :: object: # Do not use text while returning yaml text
+	set {_code} to yaml value "Database.%{_account}%.Code" from "pDiscordPremium"
+	return {_code}
+
+function pDiscordPremiumGenerateCode(account : player):
+	set {_random} to random integer between 1 and 9999999
+	set yaml value "Database.%{_account}%.Code" from "pDiscordPremium" to "%{_random}%"
+	save yaml "pDiscordPremium"
+	set {_message::*} to yaml list "Language.Game.Code-Created-Message" from "pDiscordPremium-language"
+	replace all "{code}" with "%{_random}%" in {_message::*}
+	send colored {_message::*} to {_account}
+
+
+
+
+
+function pDiscordPremiumDeleteGeneratedCode(account : player):
+	delete yaml value "Database.%{_account}%.Code" from "pDiscordPremium"
+	save yaml "pDiscordPremium"
+
+function pDiscordPremiumCodeChecker(account : text, code : text) :: boolean:
+	set {_databasecode} to yaml value "Database.%{_account}%.Code" from "pDiscordPremium"
+	if "%{_databasecode}%" = {_code}:
+		return true
+	return false
+
+function pDiscordPremiumSuccesfullyLinked(account : text, discordid : text):
+	load yaml "plugins/pDiscord/Profil/players/%{_account}%.yml" as "profile-%{_account}%"
+	set yaml value "Link.Status" from "profile-%{_account}%" to true 
+	set yaml value "Link.Discord-ID" from "profile-%{_account}%" to {_discordid}
+	save yaml "profile-%{_account}%"
+	set yaml value "Linked.%{_discordid}%" from "pDiscordPremium" to {_account}
+	save yaml "pDiscordPremium"
+
+
+function ProfileJoinEvent(account : player):
+	set {_date} to time "dd.MM.yyyy HH:mm"
+	load yaml "plugins/pDiscord/Profil/players/%{_account}%.yml" as "profile-%{_account}%"
+	set yaml value "Account.Name" from "profile-%{_account}%" to "%{_account}%"
+
+	set {_template} to yaml value "Language.YAML.Template.Join" from "pDiscordPremium-language"
+	replace all "{date}" with "%{_date}%" in {_template}
+
+
+
+
+	set {_list::*} to yaml list "Joins" from "profile-%{_account}%"
+	if size of {_list::*} <= 4:
+		add "%{_template}%" to yaml list "Joins" from "profile-%{_account}%"
+		save yaml "profile-%{_account}%"
+		unload yaml "profile-%{_account}%"
+	else:
+		set {_max} to 5
+		loop ((size of {_list::*}) times):
+			set {_list::%{_max} - loop-number + 1%} to {_list::%{_max} - loop-number%}
+		set {_list::1} to "%{_template}%"
+		set yaml list "Joins" from "profile-%{_account}%" to {_list::*}
+		save yaml "profile-%{_account}%"
+		unload yaml "profile-%{_account}%"
+
+function ProfileQuitEvent(account : player):
+	set {_date} to time "dd.MM.yyyy HH:mm"
+	load yaml "plugins/pDiscord/Profil/players/%{_account}%.yml" as "profile-%{_account}%"
+	set yaml value "Account.Name" from "profile-%{_account}%" to "%{_account}%"
+	set {_template} to yaml value "Language.YAML.Template.Quit" from "pDiscordPremium-language"
+	replace all "{date}" with "%{_date}%" in {_template}
+
+
+	set {_list::*} to yaml list "Quits" from "profile-%{_account}%"
+	if size of {_list::*} <= 4:
+		add "%{_template}%" to yaml list "Quits" from "profile-%{_account}%"
+		save yaml "profile-%{_account}%"
+		unload yaml "profile-%{_account}%"
+	else:
+		set {_max} to 5
+		loop ((size of {_list::*}) times):
+			set {_list::%{_max} - loop-number + 1%} to {_list::%{_max} - loop-number%}
+		set {_list::1} to "%{_template}%"
+		set yaml list "Quits" from "profile-%{_account}%" to {_list::*}
+		save yaml "profile-%{_account}%"
+		unload yaml "profile-%{_account}%"
+
+
+function ProfileUpdateEvent(account : player):
+	load yaml "plugins/pDiscord/Profil/players/%{_account}%.yml" as "profile-%{_account}%"
+	set yaml value "Account.Name" from "profile-%{_account}%" to "%{_account}%"
+	set yaml value "Account.Group" from "profile-%{_account}%" to {_account}'s group
+	set yaml value "Account.IP" from "profile-%{_account}%" to {_account}'s ip
+	if pDiscordPremiumIsAccountExist({_account}) = true:
+		set {_discordid} to pDiscordPremiumGetAccount("%{_account}%")
+		pDiscordPremiumAddDiscordGroupRole({_discordid}, {_account}, yaml value "Options.Give-Role-After-Linking-Account" from "pDiscordPremium-config")
+	save yaml "profile-%{_account}%"
+	unload yaml "profile-%{_account}%"	
+
+
+function pDiscordPremiumIsDiscordAccountLinked(discordid : text) :: boolean:
+	set {_account} to yaml value "Linked.%{_discordid}%" from "pDiscordPremium"
+	if {_account} is set:
+		return true
+	return false
+
+function pDiscordPremiumDiscordGetAccount(discordid : text) :: object:
+	#pDiscordPremiumUnloadYAML()
+	#pDiscordPremiumLoadYAML()
+	set {_account} to yaml value "Linked.%{_discordid}%" from "pDiscordPremium"
+	return {_account}
+
+function pDiscordPremiumGet2FAStatus(account : text) :: boolean:
+	load yaml "plugins/pDiscord/Profil/players/%{_account}%.yml" as "profile-%{_account}%"
+	set {_status} to yaml value "2FA.Status" from "profile-%{_account}%"
+	unload yaml "profile-%{_account}%"
+	if {_status} = true:
+		return true
+	return false
+
+function pDiscordPremiumLockAccountStatus(account : text) :: boolean:
+	load yaml "plugins/pDiscord/Profil/players/%{_account}%.yml" as "profile-%{_account}%"
+	set {_status} to yaml value "Lock.Status" from "profile-%{_account}%"
+	unload yaml "profile-%{_account}%"
+	if {_status} = true:
+		return true
+	return false
+
+
+function pDiscordPremiumGetAccount(account : text) :: object:
+	load yaml "plugins/pDiscord/Profil/players/%{_account}%.yml" as "profile-%{_account}%"
+	set {_status} to yaml value "Link.Discord-ID" from "profile-%{_account}%"
+	unload yaml "profile-%{_account}%"
+	return {_status}
+
+
+function pDiscordPremiumSet2FA(account : text, status : text):
+	load yaml "plugins/pDiscord/Profil/players/%{_account}%.yml" as "profile-%{_account}%"
+	if {_status} = "on":
+		set yaml value "2FA.Status" from "profile-%{_account}%" to true
+		save yaml "profile-%{_account}%"
+		unload yaml "profile-%{_account}%"
+	if {_status} = "off":
+		set yaml value "2FA.Status" from "profile-%{_account}%" to false
+		save yaml "profile-%{_account}%"
+		unload yaml "profile-%{_account}%"
+
+function pDiscordPremiumSetLock(account : text, status : text):
+	load yaml "plugins/pDiscord/Profil/players/%{_account}%.yml" as "profile-%{_account}%"
+	if {_status} = "on":
+		set yaml value "Lock.Status" from "profile-%{_account}%" to true
+		save yaml "profile-%{_account}%"
+		unload yaml "profile-%{_account}%"
+	if {_status} = "off":
+		set yaml value "Lock.Status" from "profile-%{_account}%" to false
+		save yaml "profile-%{_account}%"
+		unload yaml "profile-%{_account}%"
+
+function pDiscordPremiumGet2FASessionStatus(account : text) :: boolean:
+	load yaml "plugins/pDiscord/Profil/players/%{_account}%.yml" as "profile-%{_account}%"
+	set {_status} to yaml value "2FA.Session" from "profile-%{_account}%"
+	unload yaml "profile-%{_account}%"
+	if {_status} = true:
+		return true
+	return false
+
+function pDiscordPremiumSet2FASession(account : text, value : boolean):
+	load yaml "plugins/pDiscord/Profil/players/%{_account}%.yml" as "profile-%{_account}%"
+	set yaml value "2FA.Session" from "profile-%{_account}%" to {_value}
+	save yaml "profile-%{_account}%"
+	unload yaml "profile-%{_account}%" 
+
+function IPTrack(ip : text, value : int) :: object:
+	set {_list} to htpp request from "http://ip-api.com/line/%{_ip}%"
+	set {_list::*} to {_list} split at nl
+	if {_list::1} contains "success":
+		return {_list::%{_value}%}
+	else:
+		return "Could not be detected." # Dakikalık 35 sorgu hakkı var.
+
+function pDiscordPremium2FAJoinEvent(account : player, status : boolean):
+	if {_status} = true:
+		set {_ip} to {_account}'s ip
+		set {_country} to IPTrack({_ip}, 2)
+		set {_region} to IPTrack({_ip}, 5)
+		set {_city} to IPTrack({_ip}, 6)
+		set {_discordid} to pDiscordPremiumGetAccount("%{_account}%")
+		set {_guild} to guild with id "%yaml value "Options.Guild-ID" from "pDiscordPremium-config"%"
+
+		retrieve member with id "%{_discordid}%" in {_guild} and store it in {_member}
+
+
+		set {_descc::*} to yaml list "Language.2FA-General-Embed-Description" from "pDiscordPremium-language"
+		replace all "{account}" with "%{_account}%" in {_descc::*}
+		replace all "{ip}" with "%{_ip}%" in {_descc::*}
+		replace all "{country}" with "%{_country}%" in {_descc::*}
+		replace all "{region}" with "%{_region}%" in {_descc::*}
+		replace all "{city}" with "%{_city}%" in {_descc::*}
+
+		set {_thumbnail} to yaml value "Language.2FA-General-Embed-Thumbnail" from "pDiscordPremium-language"
+		replace all "{player}" with "%{_account}%" in {_thumbnail}
+
+
+		open private channel of {_member} and store it in {_private}
+		create a new message and store it in {_msg}:
+			make new embed:
+				set title of embed to "%getYAMLValue("Language.2FA-General-Embed-Title", "pDiscordPremium-language")%"
+				set thumbnail of embed to "%{_thumbnail}%"
+				set embed color of embed to rgb(153, 51, 255)
+				set description of embed to join {_descc::*} with nl
+			add last embed to the embeds of the message
+			make new component row and store it in {_row}:
+				add new success button with id "2fa-%{_account}%" named "%getYAMLValue("Language.Setup-Embed-Buttons.2FA-Verify-Text", "pDiscordPremium-language")%" to components of the row builder
+			add {_row} to rows of the message
+		post {_msg} to {_private} and store it in {2famsg::%{_discordid}%}
+		set {pDiscordPremium2fa::%{_account}%} to true
+		set {2fa-ip::%{_discordid}%}  to {_ip}
+		set {2fa-country::%{_discordid}%}  to {_country}
+		set {2fa-region::%{_discordid}%}  to {_region}
+		set {2fa-city::%{_discordid}%}  to {_city}
+
+	if {_status} = false:
+		send colored (yaml list "Language.Game.Warn-Enable-2FA-Message" from "pDiscordPremium-language") to {_account}
+
+function pDiscordPremiumChangeDiscordNicknameEvent(discordid : text, account : object, status : boolean):
+	if {_status} = true:
+		set {_guild} to guild with id "%yaml value "Options.Guild-ID" from "pDiscordPremium-config"%"
+		retrieve member with id "%{_discordid}%" in {_guild} and store it in {_member}
+		set member nickname of {_member} to "%{_account}%"
+
+
+function pDiscordPremiumAddDiscordGroupRole(discordid : object, account : player, status : boolean):
+	if {_status} = true:
+		set {_guild} to guild with id "%yaml value "Options.Guild-ID" from "pDiscordPremium-config"%"
+		set {_group} to {_account}'s group
+		set {_roleid} to yaml value "Groups.%{_group}%" from "pDiscordPremium-config"
+		retrieve member with id "%{_discordid}%" in {_guild} and store it in {_member}
+
+		if roles of {_member} does not contain role with id "%{_roleid}%":
+			add role with id "%{_roleid}%" to roles of {_member} in guild {_guild}
+
+function pDiscordPremiumExecuteRewards(account : player, status : boolean):
+	if {_status} = true:
+		set {_rewards::*} to yaml list "Rewards.Console" from "pDiscordPremium-config"
+		replace all "{player}" with "%{_account}%" in {_rewards::*}	
+		loop {_rewards::*}:
+			execute console command loop-value
+
+function playSound(sound : text,account : player):
+	play sound {_sound} with volume 0.5 to {_account}
+	
+function sendTitle(title : text, subtitle : text, account : player):
+	send title {_title} with subtitle {_subtitle} to {_account} for 3 seconds
+
+function delete2FAVariables(discordid : text):
+	delete {2fa-ip::%{_discordid}%} 
+	delete {2fa-country::%{_discordid}%} 
+	delete {2fa-region::%{_discordid}%} 
+	delete {2fa-city::%{_discordid}%} 
+
+function pDiscordPremiumLockEvent(account : player, status : boolean) :: boolean:
+	if pDiscordPremiumIsAccountExist({_account}) = true:
+		if {_status} = true:
+			set {_message} to "%yaml value "Language.Game.Kick-Lock-Account-Message" from "pDiscordPremium-language"%"
+			kick {_account} due to "%{_message}%"
+			return false
+		if {_status} = false:
+			set {_message::*} to yaml list "Language.Game.Warn-Enable-Lock-Account-Message" from "pDiscordPremium-language"
+			send colored {_message::*} to {_account}
+			return true
+
+
+function kickPlayer(account : player):
+	set {_message} to "%yaml value "Language.Game.Kick-Lock-Account-Message" from "pDiscordPremium-language"%"
+	wait 5 ticks
+	kick {_account} due to "%{_message}%"
+
+function getYAMLValue(value : text, file : text) :: object:
+	set {_doc} to yaml value {_value} from {_file}
+	return {_doc}	
+
+# Game Commands
+
+command eşle:
+	aliases: esle, link, discordlink
+	trigger:
+		if pDiscordPremiumIsAccountExist(player) != true:
+			if pDiscordPremiumIsCodeExist(player) != true:
+				pDiscordPremiumGenerateCode(player)
+				wait 3 minutes
+				pDiscordPremiumDeleteGeneratedCode(player)
+			else:
+				set {_message::*} to yaml list "Language.Game.Warn-Already-Code-Created-Before-Message" from "pDiscordPremium-language"
+				replace all "{code}" with "%pDiscordPremiumGetGeneratedCode(player)%" in {_message::*}
+				send colored {_message::*} to player
+		else:
+			set {_message::*} to yaml list "Language.Game.Error-Already-Linked-Account-Message" from "pDiscordPremium-language"
+			send colored {_message::*} to player
+
+
+
+
+command pdiscord [<text>]:
+	permission: pdiscord.admin
+	trigger:
+		if arg-1 is set:
+			if arg-1 is "reload" or "yenile":
+				pDiscordPremiumUnloadYAML()
+				pDiscordPremiumLoadYAML()
+				send "&b&lpDISCORD &8▶ &7You're &asuccesfully &7updated the &a.yml &7files."
+			if arg-1 is "debug":
+				send "&b&lpDISCORD &8▶ &7This server is running Minecraft &a%minecraft version% &7on Bukkit &a%bukkit version%"
+				send "&b&lpDISCORD &8▶ &7This server is powered by Skript &a%skript version%" 
+				send "&b&lpDISCORD &8▶ &7This server is running pDiscord &a{@version}"
+		else:
+			send "&b&lpDISCORD &8▶ &7This server is running pDiscord &a{@version}"
+			send "&b&lpDISCORD &8▶ &7Avaliable Commands &8(&a/pdiscord reload&8,&a/pdiscord debug&8)"
+
+
+# Game Events
+
+break:
+	if {pDiscordPremium2fa::%player%} is set:
+		cancel event
+		playSound("entity.firework_rocket.blast", player)
+		sendTitle("%getYAMLValue("Language.Game.2FA-Title", "pDiscordPremium-language")%", "%getYAMLValue("Language.Game.2FA-Subtitle", "pDiscordPremium-language")%", player)
+
+place:
+	if {pDiscordPremium2fa::%player%} is set:
+		cancel event
+		playSound("entity.firework_rocket.blast", player)
+		sendTitle("%getYAMLValue("Language.Game.2FA-Title", "pDiscordPremium-language")%", "%getYAMLValue("Language.Game.2FA-Subtitle", "pDiscordPremium-language")%", player)
+
+chat:
+	if {pDiscordPremium2fa::%player%} is set:
+		cancel event
+		playSound("entity.firework_rocket.blast", player)
+		sendTitle("%getYAMLValue("Language.Game.2FA-Title", "pDiscordPremium-language")%", "%getYAMLValue("Language.Game.2FA-Subtitle", "pDiscordPremium-language")%", player)
+
+command:
+	if {pDiscordPremium2fa::%player%} is set:
+		cancel event
+		playSound("entity.firework_rocket.blast", player)
+		sendTitle("%getYAMLValue("Language.Game.2FA-Title", "pDiscordPremium-language")%", "%getYAMLValue("Language.Game.2FA-Subtitle", "pDiscordPremium-language")%", player)
+
+drop:
+	if {pDiscordPremium2fa::%player%} is set:
+		cancel event
+		playSound("entity.firework_rocket.blast", player)
+		sendTitle("%getYAMLValue("Language.Game.2FA-Title", "pDiscordPremium-language")%", "%getYAMLValue("Language.Game.2FA-Subtitle", "pDiscordPremium-language")%", player)
+
+
+
+join:
+	ProfileJoinEvent(player) # Fixed reported byFrenzy
+	if pDiscordPremiumLockEvent(player, pDiscordPremiumLockAccountStatus("%player%")) = true:
+		ProfileUpdateEvent(player)
+		pDiscordPremium2FAJoinEvent(player, pDiscordPremiumGet2FAStatus("%player%"))
+
+
+
+quit:
+	ProfileQuitEvent(player)
+	ProfileUpdateEvent(player)
+
+
+#  Discord Events
+
+on slash command:
+	set {_name} to event-string
+	if {_name} is "%getYAMLValue("Setup.Command", "pDiscordPremium-config")%":
+		set {_admins::*} to yaml list "Setup.Admin-ID" from "pDiscordPremium-config"
+		loop {_admins::*}:
+			if  discord id of event-member = "%loop-value%":
+				set {_desc::*} to yaml list "Language.Setup-Embed-Description" from "pDiscordPremium-language"
+				create a new message and store it in {_msg}:
+					make new embed:
+						set title of embed to "%getYAMLValue("Language.Setup-Embed-Title", "pDiscordPremium-language")%"
+						set thumbnail of embed to "%getYAMLValue("Language.Setup-Embed-Thumbnail", "pDiscordPremium-language")%"
+						set embed color of embed to rgb(153, 51, 255)
+						set description of embed to join {_desc::*} with nl
+						set footer of embed to "%getYAMLValue("Language.Setup-Embed-Footer", "pDiscordPremium-language")%"    
+					add last embed to the embeds of the message
+
+					make new component row and store it in {_row}:
+						add new link button with id "%getYAMLValue("Language.Setup-Embed-Buttons.More-Information-Link", "pDiscordPremium-language")%" named "%getYAMLValue("Language.Setup-Embed-Buttons.More-Information-Text", "pDiscordPremium-language")%" to components of the row builder
+						add new success button with id "esle-1" named "%getYAMLValue("Language.Setup-Embed-Buttons.Link-Account-Text", "pDiscordPremium-language")%" to components of the row builder
+						add new danger button with id "esle-4" named "%getYAMLValue("Language.Setup-Embed-Buttons.Lock-Account-Text", "pDiscordPremium-language")%" to components of the row builder
+						add new secondary button with id "esle-2" named "%getYAMLValue("Language.Setup-Embed-Buttons.Update-Account-Text", "pDiscordPremium-language")%" to components of the row builder
+						add new secondary button with id "esle-3" named "%getYAMLValue("Language.Setup-Embed-Buttons.2FA-Text", "pDiscordPremium-language")%" to components of the row builder
+
+					add {_row} to rows of the message
+				reply with {_msg}
+
+
+on button click:
+	set {_id} to event-string
+	if {_id} = "esle-1":
+		if pDiscordPremiumIsDiscordAccountLinked(discord id of event-member) != true:
+			# Create the modal
+			set {_m} to new modal with id "pDiscordPremium" named "%getYAMLValue("Language.Modals.Title", "pDiscordPremium-language")%"
+
+			# Make the input
+			make long modal input with id "pDiscordPremium-hesap" named "%getYAMLValue("Language.Modals.Account-Name-Text", "pDiscordPremium-language")%" with min 1 and max 100 with placeholder "%getYAMLValue("Language.Modals.Account-Name-Placeholder", "pDiscordPremium-language")%" with required true and store it in {_hesap::*}
+			make long modal input with id "pDiscordPremium-kod" named "%getYAMLValue("Language.Modals.Verification-Code-Text", "pDiscordPremium-language")%" with min 1 and max 7 with placeholder "%getYAMLValue("Language.Modals.Verification-Code-Placeholder", "pDiscordPremium-language")%" with required true and store it in {_kod::*}
+			# Add it to the modal
+			add {_hesap::*} to rows of {_m}
+			add {_kod::*} to rows of {_m}
+
+			# Display it to the user
+			show {_m} to the user
+		else:
+			set {_account} to pDiscordPremiumDiscordGetAccount(discord id of event-member)
+			set {_desc::*} to yaml list "Language.Already-Matched-Embed-Description" from "pDiscordPremium-language"
+			replace all "{account}" with "%{_account}%" in {_desc::*}
+			make new embed:
+				set title of embed to "%getYAMLValue("Language.Already-Matched-Embed-Title", "pDiscordPremium-language")%"
+				set description of embed to join {_desc::*} with nl
+				set embed color of embed to red
+			reply with hidden last embed	
+	if {_id} = "esle-2":
+		if pDiscordPremiumIsDiscordAccountLinked(discord id of event-member) = true:
+			set {_account} to pDiscordPremiumDiscordGetAccount(discord id of event-member)
+			ProfileUpdateEvent({_account} parsed as player)
+			set {_desc::*} to yaml list "Language.Succesfully-Updated-Profile-Embed-Description" from "pDiscordPremium-language"
+			replace all "{account}" with "%{_account}%" in {_desc::*}
+			make new embed:
+				set title of embed to "%getYAMLValue("Language.Succesfully-Updated-Profile-Embed-Title", "pDiscordPremium-language")%"
+				set description of embed to join {_desc::*} with nl
+				set embed color of embed to rgb(153, 51, 255)
+			reply with hidden last embed
+		else:
+			set {_desc::*} to yaml list "Language.Please-Link-Your-Account-Embed-Description" from "pDiscordPremium-language"
+			make new embed:
+				set title of embed to "%getYAMLValue("Language.Please-Link-Your-Account-Embed-Title", "pDiscordPremium-language")%"
+				set description of embed to join {_desc::*} with nl
+				set embed color of embed to red
+			reply with hidden last embed	
+	if {_id} = "esle-3":
+		if pDiscordPremiumIsDiscordAccountLinked(discord id of event-member) = true:
+			set {_account} to pDiscordPremiumDiscordGetAccount(discord id of event-member)
+
+			set {_status} to pDiscordPremiumGet2FAStatus(pDiscordPremiumDiscordGetAccount(discord id of event-member))
+			if {_status} = true:
+				pDiscordPremiumSet2FA(pDiscordPremiumDiscordGetAccount(discord id of event-member), "off")
+				set {_desc::*} to yaml list "Language.2FA-Disabled-Embed-Description" from "pDiscordPremium-language"
+				replace all "{account}" with "%{_account}%" in {_desc::*}
+
+				make new embed:
+					set title of embed to "%getYAMLValue("Language.2FA-Disabled-Embed-Title", "pDiscordPremium-language")%"
+					set description of embed to join {_desc::*} with nl
+					set embed color of embed to red
+				reply with hidden last embed	
+			if {_status} = false:
+				pDiscordPremiumSet2FA(pDiscordPremiumDiscordGetAccount(discord id of event-member), "on")
+				set {_desc::*} to yaml list "Language.2FA-Enabled-Embed-Description" from "pDiscordPremium-language"
+				replace all "{account}" with "%{_account}%" in {_desc::*}
+
+				make new embed:
+					set title of embed to "%getYAMLValue("Language.2FA-Enabled-Embed-Title", "pDiscordPremium-language")%"
+					set description of embed to join {_desc::*} with nl
+					set embed color of embed to rgb(153, 51, 255)
+				reply with hidden last embed
+		else:
+			set {_desc::*} to yaml list "Language.Please-Link-Your-Account-Embed-Description" from "pDiscordPremium-language"
+			make new embed:
+				set title of embed to "%getYAMLValue("Language.Please-Link-Your-Account-Embed-Title", "pDiscordPremium-language")%"
+				set description of embed to join {_desc::*} with nl
+				set embed color of embed to red
+			reply with hidden last embed
+	if {_id} = "esle-4":
+		if pDiscordPremiumIsDiscordAccountLinked(discord id of event-member) = true:
+			set {_account} to pDiscordPremiumDiscordGetAccount(discord id of event-member)
+			set {_status} to pDiscordPremiumLockAccountStatus(pDiscordPremiumDiscordGetAccount(discord id of event-member))
+			if {_status} = true:
+				pDiscordPremiumSetLock(pDiscordPremiumDiscordGetAccount(discord id of event-member), "off")
+				set {_desc::*} to yaml list "Language.Lock-Account-Disabled-Embed-Description" from "pDiscordPremium-language"
+				replace all "{account}" with "%{_account}%" in {_desc::*}
+				make new embed:
+					set title of embed to "%getYAMLValue("Language.Lock-Account-Disabled-Embed-Title", "pDiscordPremium-language")%"
+					set description of embed to join {_desc::*} with nl
+					set embed color of embed to red
+				reply with hidden last embed	
+			if {_status} = false:
+				pDiscordPremiumSetLock(pDiscordPremiumDiscordGetAccount(discord id of event-member), "on")
+				set {_desc::*} to yaml list "Language.Lock-Account-Enabled-Embed-Description" from "pDiscordPremium-language"
+				replace all "{account}" with "%{_account}%" in {_desc::*}
+				make new embed:
+					set title of embed to "%getYAMLValue("Language.Lock-Account-Enabled-Embed-Title", "pDiscordPremium-language")%"
+					set description of embed to join {_desc::*} with nl
+					set embed color of embed to rgb(153, 51, 255)
+				reply with hidden last embed
+		else:
+			set {_desc::*} to yaml list "Language.Please-Link-Your-Account-Embed-Description" from "pDiscordPremium-language"
+			make new embed:
+				set title of embed to "%getYAMLValue("Language.Please-Link-Your-Account-Embed-Title", "pDiscordPremium-language")%"
+				set description of embed to join {_desc::*} with nl
+				set embed color of embed to red
+			reply with hidden last embed
+	if {_id} = "2fa-%pDiscordPremiumDiscordGetAccount(discord id of event-user)%":
+		delete {pDiscordPremium2fa::%pDiscordPremiumDiscordGetAccount(discord id of event-user)%}
+		sendTitle("%getYAMLValue("Language.2FA-Succesfully-Game-Title", "pDiscordPremium-language")%", "%getYAMLValue("Language.2FA-Succesfully-Game-Subtitle", "pDiscordPremium-language")%", pDiscordPremiumDiscordGetAccount(discord id of event-user) parsed as player)
+		set {_desc::*} to yaml list "Language.2FA-Succesfully-Embed-Description" from "pDiscordPremium-language"
+		replace all "{account}" with "%pDiscordPremiumDiscordGetAccount(discord id of event-user)%" in {_desc::*}
+
+		make new embed:
+			set title of embed to "%getYAMLValue("Language.2FA-Succesfully-Embed-Title", "pDiscordPremium-language")%"
+			set description of embed to join {_desc::*} with nl
+			set embed color of embed to rgb(153, 51, 255)
+		reply with hidden last embed
+
+
+		set {_ip} to {2fa-ip::%discord id of event-user%} 
+		set {_country} to {2fa-country::%discord id of event-user%} 
+		set {_region} to {2fa-region::%discord id of event-user%} 
+		set {_city} to {2fa-city::%discord id of event-user%} 
+
+
+		set {_descc::*} to yaml list "Language.2FA-General-Embed-Description" from "pDiscordPremium-language"
+		replace all "{account}" with "%pDiscordPremiumDiscordGetAccount(discord id of event-user)%" in {_descc::*}
+		replace all "{ip}" with "%{_ip}%" in {_descc::*}
+		replace all "{country}" with "%{_country}%" in {_descc::*}
+		replace all "{region}" with "%{_region}%" in {_descc::*}
+		replace all "{city}" with "%{_city}%" in {_descc::*}
+
+
+		set {_thumbnail} to yaml value "Language.2FA-General-Embed-Thumbnail" from "pDiscordPremium-language"
+		replace all "{player}" with "%pDiscordPremiumDiscordGetAccount(discord id of event-user)%" in {_thumbnail}
+
+		create a new message and store it in {_msg}:
+			make new embed:
+				set title of embed to "%getYAMLValue("Language.2FA-General-Embed-Title", "pDiscordPremium-language")%"
+				set thumbnail of embed to "%{_thumbnail}%"
+				set embed color of embed to rgb(153, 51, 255)
+				set description of embed to join {_descc::*} with nl
+			add last embed to the embeds of the message
+			make new component row and store it in {_row}:
+				add new disabled success button with id "2fa-%{_account}%" named "%getYAMLValue("Language.Setup-Embed-Buttons.2FA-Succesfully-Text", "pDiscordPremium-language")%" to components of the row builder
+			add {_row} to rows of the message
+		edit {2famsg::%discord id of event-user%} to show {_msg}
+		delete2FAVariables(discord id of event-user)
+
+
+
+
+
+on modal receive:
+	set {_id} to event-string
+	if {_id} = "pDiscordPremium":
+		set {_hesap} to values of text input with id "pDiscordPremium-hesap"
+		set {_kod} to values of text input with id "pDiscordPremium-kod"
+		if pDiscordPremiumIsAccountExist({_hesap}) != true:
+			if pDiscordPremiumCodeChecker({_hesap}, {_kod}) = true:
+				pDiscordPremiumDeleteGeneratedCode({_hesap} parsed as player)
+				pDiscordPremiumSuccesfullyLinked({_hesap}, discord id of event-member)
+				pDiscordPremiumChangeDiscordNicknameEvent(discord id of event-member, {_hesap}, yaml value "Options.Change-Nickname-After-Linking-Account" from "pDiscordPremium-config")
+				pDiscordPremiumAddDiscordGroupRole(discord id of event-member, {_hesap} parsed as player, yaml value "Options.Give-Role-After-Linking-Account" from "pDiscordPremium-config")
+				pDiscordPremiumExecuteRewards({_hesap} parsed as player, yaml value "Options.Give-Reward-After-Linking-Account" from "pDiscordPremium-config")
+				
+				set {_desc::*} to yaml list "Language.Succesfully-Linked-Embed-Description" from "pDiscordPremium-language"
+				replace all "{account}" with "%{_hesap}%" in {_desc::*}
+
+				
+				make new embed:
+					set title of embed to "%getYAMLValue("Language.Succesfully-Linked-Embed-Title", "pDiscordPremium-language")%"
+					set description of embed to join {_desc::*} with nl
+					set embed color of embed to rgb(153, 51, 255)
+				reply with hidden last embed
+
+			else:
+				set {_desc::*} to yaml list "Language.Wrong-Auth-Embed-Description" from "pDiscordPremium-language"
+				make new embed:
+					set title of embed to "%getYAMLValue("Language.Wrong-Auth-Embed-Title", "pDiscordPremium-language")%"
+					set description of embed to join {_desc::*} with nl
+					set embed color of embed to red
+				reply with hidden last embed
+
+		else:
+			set {_desc::*} to yaml list "Language.Already-Linked-Before-Embed-Description" from "pDiscordPremium-language"
+			make new embed:
+				set title of embed to "%getYAMLValue("Language.Already-Linked-Before-Embed-Title", "pDiscordPremium-language")%"
+				set description of embed to join {_desc::*} with nl
+				set embed color of embed to red
+			reply with hidden last embed
+
+
