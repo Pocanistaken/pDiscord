@@ -1,2 +1,7 @@
-# pDiscord
-Create a bridge between your Minecraft server and your discord server
+![1](https://github.com/user-attachments/assets/c851bc21-5840-4f18-a6d9-26ab2c9d9437)
+![2](https://github.com/user-attachments/assets/946b8212-10bb-427c-9f32-90dd6ca87e25)
+![3](https://github.com/user-attachments/assets/b01723ef-9612-416b-ba64-e6dadd6c308b)
+![4](https://github.com/user-attachments/assets/04c65afe-fedb-4008-ae0c-4bc4a50ffc7f)
+![5](https://github.com/user-attachments/assets/b2b4d4c6-ead1-4080-b9fd-ac0e88850565)
+![6](https://github.com/user-attachments/assets/a7dce087-6926-4957-8684-709855506642)
+![7](https://github.com/user-attachments/assets/fc8332a6-0981-40ac-a4ca-35b2742ba0c9)
